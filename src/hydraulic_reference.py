@@ -1,18 +1,26 @@
+# Import necessary libraries
 import dash
-from dash import html, dcc, Input, Output, State
+from dash import html, dcc, Input, Output, State, callback_context
 import dash_bootstrap_components as dbc
 import math
+from scipy.optimize import fsolve
 
-# Initialize the app with a Bootstrap stylesheet for styling
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+# Initialize the app with a dark Bootstrap stylesheet for styling
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.CYBORG], suppress_callback_exceptions=True)
 
 # Define the server variable for deployment
 server = app.server
 
+# Custom CSS styles for additional styling (if any)
+# For example, if you have a custom CSS file, you can include it here
+# app.css.append_css({
+#     'external_url': '/assets/custom_styles.css'
+# })
+
 # Landing page layout
 app.layout = dbc.Container([
     dbc.Row([
-        dbc.Col(html.H1("Liquid Hydraulic Reference Tool", className="text-center my-4"))
+        dbc.Col(html.H1("💧 Liquid Hydraulic Reference Tool", className="text-center my-4 text-light"))
     ]),
     dbc.Row([
         dbc.Col([
@@ -23,9 +31,9 @@ app.layout = dbc.Container([
             dbc.Button("Unit Conversions", id="unit-conversions-btn", color="info", className="m-2", size='lg'),
         ], className="text-center")
     ]),
-    html.Hr(),
+    html.Hr(className="my-4"),
     html.Div(id='page-content')
-], fluid=True)
+], fluid=True, className="bg-dark")
 
 # Callback to update the page content based on button clicks
 @app.callback(
@@ -37,7 +45,7 @@ app.layout = dbc.Container([
      Input('unit-conversions-btn', 'n_clicks')]
 )
 def display_page(pv_clicks, rn_clicks, ff_clicks, en_clicks, uc_clicks):
-    ctx = dash.callback_context
+    ctx = callback_context
 
     if not ctx.triggered:
         return html.Div()
@@ -57,31 +65,28 @@ def display_page(pv_clicks, rn_clicks, ff_clicks, en_clicks, uc_clicks):
     else:
         return html.Div()
 
-# Run the app
-if __name__ == '__main__':
-    app.run_server(debug=True)
-
+# Pipeline Volume Calculator Layout and Callback
 def pipeline_volume_layout():
     return dbc.Container([
-        dbc.Row(dbc.Col(html.H2("Pipeline Volume Calculator", className="text-center my-4"))),
+        dbc.Row(dbc.Col(html.H2("Pipeline Volume Calculator", className="text-center my-4 text-light"))),
         dbc.Row([
             dbc.Col([
-                dbc.Label("Diameter (inches):"),
-                dbc.Input(id='pv-diameter', type='number', value=24),
+                dbc.Label("Diameter (inches):", className="text-light"),
+                dbc.Input(id='pv-diameter', type='number', value=24, className="mb-2"),
             ], width=4),
             dbc.Col([
-                dbc.Label("Wall Thickness (inches):"),
-                dbc.Input(id='pv-wall-thickness', type='number', value=0.5),
+                dbc.Label("Wall Thickness (inches):", className="text-light"),
+                dbc.Input(id='pv-wall-thickness', type='number', value=0.5, className="mb-2"),
             ], width=4),
             dbc.Col([
-                dbc.Label("Distance (miles):"),
-                dbc.Input(id='pv-distance', type='number', value=10),
+                dbc.Label("Distance (miles):", className="text-light"),
+                dbc.Input(id='pv-distance', type='number', value=10, className="mb-2"),
             ], width=4),
         ], className="mb-3"),
-        dbc.Button('Calculate', id='pv-calculate-btn', color='primary'),
-        html.Hr(),
-        html.Div(id='pv-output')
-    ], fluid=True)
+        dbc.Button('Calculate', id='pv-calculate-btn', color='primary', className="mb-3"),
+        html.Hr(className="my-4"),
+        html.Div(id='pv-output', className="text-light")
+    ], fluid=True, className="bg-dark")
 
 @app.callback(
     Output('pv-output', 'children'),
@@ -103,33 +108,34 @@ def calculate_pipeline_volume(n_clicks, diameter, wall_thickness, distance):
 
         # Output
         return html.Div([
-            html.H4("Results:"),
+            html.H4("Results:", className="text-light"),
             html.P(f"Pipeline Volume: {volume_cuft:.2f} cubic feet"),
             html.P(f"Pipeline Volume: {volume_bbl:.2f} barrels")
         ])
     return ''
 
+# Reynolds Number & Pipeline Velocity Calculator Layout and Callback
 def reynolds_number_layout():
     return dbc.Container([
-        dbc.Row(dbc.Col(html.H2("Reynolds Number & Pipeline Velocity Calculator", className="text-center my-4"))),
+        dbc.Row(dbc.Col(html.H2("Reynolds Number & Velocity Calculator", className="text-center my-4 text-light"))),
         dbc.Row([
             dbc.Col([
-                dbc.Label("Diameter (inches):"),
-                dbc.Input(id='rn-diameter', type='number', value=24),
+                dbc.Label("Diameter (inches):", className="text-light"),
+                dbc.Input(id='rn-diameter', type='number', value=24, className="mb-2"),
             ], width=4),
             dbc.Col([
-                dbc.Label("Flow Rate (barrels per day):"),
-                dbc.Input(id='rn-flow-rate', type='number', value=100000),
+                dbc.Label("Flow Rate (barrels per day):", className="text-light"),
+                dbc.Input(id='rn-flow-rate', type='number', value=100000, className="mb-2"),
             ], width=4),
             dbc.Col([
-                dbc.Label("Kinematic Viscosity (cSt):"),
-                dbc.Input(id='rn-viscosity', type='number', value=1),
+                dbc.Label("Kinematic Viscosity (cSt):", className="text-light"),
+                dbc.Input(id='rn-viscosity', type='number', value=1, className="mb-2"),
             ], width=4),
         ], className="mb-3"),
-        dbc.Button('Calculate', id='rn-calculate-btn', color='primary'),
-        html.Hr(),
-        html.Div(id='rn-output')
-    ], fluid=True)
+        dbc.Button('Calculate', id='rn-calculate-btn', color='primary', className="mb-3"),
+        html.Hr(className="my-4"),
+        html.Div(id='rn-output', className="text-light")
+    ], fluid=True, className="bg-dark")
 
 @app.callback(
     Output('rn-output', 'children'),
@@ -143,7 +149,7 @@ def calculate_reynolds_number(n_clicks, diameter, flow_rate, viscosity):
         # Calculations
         diameter_ft = diameter / 12  # feet
         area_sqft = math.pi * (diameter_ft / 2) ** 2  # square feet
-        flow_rate_cfs = (flow_rate * 0.0238095) / 86400  # bbl/day to cubic feet per second
+        flow_rate_cfs = (flow_rate * 5.614583) / (24 * 3600)  # bbl/day to cubic feet per second
         velocity_fps = flow_rate_cfs / area_sqft  # feet per second
         diameter_m = diameter_ft * 0.3048  # meters
         velocity_mps = velocity_fps * 0.3048  # meters per second
@@ -152,25 +158,90 @@ def calculate_reynolds_number(n_clicks, diameter, flow_rate, viscosity):
 
         # Output
         return html.Div([
-            html.H4("Results:"),
+            html.H4("Results:", className="text-light"),
             html.P(f"Pipeline Velocity: {velocity_fps:.2f} ft/s"),
             html.P(f"Reynolds Number: {reynolds_number:.2f}")
         ])
     return ''
 
-def energy_needs_layout():
+# Friction Factor Calculator Layout and Callback
+def friction_factor_layout():
     return dbc.Container([
-        dbc.Row(dbc.Col(html.H2("Energy Needs Calculator", className="text-center my-4"))),
+        dbc.Row(dbc.Col(html.H2("Friction Factor Calculator", className="text-center my-4 text-light"))),
         dbc.Row([
             dbc.Col([
-                dbc.Label("Pump Horsepower (HP):"),
-                dbc.Input(id='en-horsepower', type='number', value=100),
+                dbc.Label("Relative Roughness (ε/D):", className="text-light"),
+                dbc.Input(id='ff-roughness', type='number', value=0.0001, className="mb-2"),
+            ], width=4),
+            dbc.Col([
+                dbc.Label("Reynolds Number:", className="text-light"),
+                dbc.Input(id='ff-reynolds', type='number', value=100000, className="mb-2"),
+            ], width=4),
+            dbc.Col([
+                dbc.Label("Method:", className="text-light"),
+                dcc.Dropdown(
+                    id='ff-method',
+                    options=[
+                        {'label': 'Darcy-Weisbach', 'value': 'darcy'},
+                        {'label': 'Clamond', 'value': 'clamond'}
+                    ],
+                    value='darcy',
+                    className="mb-2"
+                ),
+            ], width=4),
+        ], className="mb-3"),
+        dbc.Button('Calculate', id='ff-calculate-btn', color='primary', className="mb-3"),
+        html.Hr(className="my-4"),
+        html.Div(id='ff-output', className="text-light")
+    ], fluid=True, className="bg-dark")
+
+@app.callback(
+    Output('ff-output', 'children'),
+    Input('ff-calculate-btn', 'n_clicks'),
+    State('ff-roughness', 'value'),
+    State('ff-reynolds', 'value'),
+    State('ff-method', 'value')
+)
+def calculate_friction_factor(n_clicks, roughness, reynolds_number, method):
+    if n_clicks:
+        if method == 'darcy':
+            # Colebrook-White equation approximation for Darcy-Weisbach friction factor
+            def colebrook(f):
+                return 1.0 / math.sqrt(f) + 2.0 * math.log10(roughness / 3.7 + 2.51 / (reynolds_number * math.sqrt(f)))
+            initial_guess = 0.02
+            friction_factor = fsolve(colebrook, initial_guess)[0]
+            method_used = "Darcy-Weisbach (Colebrook-White approximation)"
+        elif method == 'clamond':
+            # Clamond's method approximation
+            # Placeholder calculation (replace with actual Clamond's formula)
+            friction_factor = 0.25 / (math.log10(roughness / 3.7 + 5.74 / (reynolds_number ** 0.9))) ** 2
+            method_used = "Clamond's method"
+        else:
+            friction_factor = None
+            method_used = "Unknown method"
+
+        # Output
+        return html.Div([
+            html.H4("Results:", className="text-light"),
+            html.P(f"Method Used: {method_used}"),
+            html.P(f"Friction Factor (f): {friction_factor:.6f}")
+        ])
+    return ''
+
+# Energy Needs Calculator Layout and Callback
+def energy_needs_layout():
+    return dbc.Container([
+        dbc.Row(dbc.Col(html.H2("Energy Needs Calculator", className="text-center my-4 text-light"))),
+        dbc.Row([
+            dbc.Col([
+                dbc.Label("Pump Horsepower (HP):", className="text-light"),
+                dbc.Input(id='en-horsepower', type='number', value=100, className="mb-2"),
             ], width=6),
         ], className="mb-3"),
-        dbc.Button('Calculate', id='en-calculate-btn', color='primary'),
-        html.Hr(),
-        html.Div(id='en-output')
-    ], fluid=True)
+        dbc.Button('Calculate', id='en-calculate-btn', color='primary', className="mb-3"),
+        html.Hr(className="my-4"),
+        html.Div(id='en-output', className="text-light")
+    ], fluid=True, className="bg-dark")
 
 @app.callback(
     Output('en-output', 'children'),
@@ -184,21 +255,22 @@ def calculate_energy_needs(n_clicks, horsepower):
 
         # Output
         return html.Div([
-            html.H4("Results:"),
+            html.H4("Results:", className="text-light"),
             html.P(f"Energy Needed: {kilowatts:.2f} kW")
         ])
     return ''
 
+# Unit Conversions Layout and Callbacks
 def unit_conversions_layout():
     return dbc.Container([
-        dbc.Row(dbc.Col(html.H2("Unit Conversions", className="text-center my-4"))),
+        dbc.Row(dbc.Col(html.H2("Unit Conversions", className="text-center my-4 text-light"))),
         dbc.Tabs([
             dbc.Tab(label='Degrees API to Specific Gravity', tab_id='tab-api-sg'),
             dbc.Tab(label='Pressure to Head (ft)', tab_id='tab-pressure-head'),
             dbc.Tab(label='Dynamic to Kinematic Viscosity', tab_id='tab-viscosity'),
-        ], id='unit-tabs', active_tab='tab-api-sg'),
+        ], id='unit-tabs', active_tab='tab-api-sg', className="mb-3"),
         html.Div(id='tab-content')
-    ], fluid=True)
+    ], fluid=True, className="bg-dark")
 
 @app.callback(
     Output('tab-content', 'children'),
@@ -213,28 +285,44 @@ def render_tab_content(active_tab):
         return viscosity_conversion_layout()
     return ''
 
+# Degrees API to Specific Gravity Layout and Callback
+def api_to_sg_layout():
+    return dbc.Container([
+        dbc.Row([
+            dbc.Col([
+                dbc.Label("Degrees API:", className="text-light"),
+                dbc.Input(id='api-value', type='number', value=30, className="mb-2"),
+                dbc.Button('Convert', id='api-convert-btn', color='primary', className='mt-2'),
+                html.Div(id='api-output', className='mt-4 text-light')
+            ], width=6)
+        ])
+    ], fluid=True, className="bg-dark")
+
 @app.callback(
-    Output('tab-content', 'children'),
-    Input('unit-tabs', 'active_tab')
+    Output('api-output', 'children'),
+    Input('api-convert-btn', 'n_clicks'),
+    State('api-value', 'value')
 )
-def render_tab_content(active_tab):
-    if active_tab == 'tab-api-sg':
-        return api_to_sg_layout()
-    elif active_tab == 'tab-pressure-head':
-        return pressure_to_head_layout()
-    elif active_tab == 'tab-viscosity':
-        return viscosity_conversion_layout()
+def convert_api_to_sg(n_clicks, api):
+    if n_clicks:
+        sg = 141.5 / (131.5 + api)
+        return html.P(f"Specific Gravity: {sg:.4f}")
     return ''
 
+# Pressure to Head Layout and Callback
 def pressure_to_head_layout():
-    return html.Div([
-        dbc.Label("Pressure (psi):"),
-        dbc.Input(id='pressure-value', type='number', value=100),
-        dbc.Label("Specific Gravity:", className='mt-2'),
-        dbc.Input(id='pressure-sg', type='number', value=1),
-        dbc.Button('Convert', id='pressure-convert-btn', color='primary', className='mt-2'),
-        html.Div(id='pressure-output', className='mt-2')
-    ])
+    return dbc.Container([
+        dbc.Row([
+            dbc.Col([
+                dbc.Label("Pressure (psi):", className="text-light"),
+                dbc.Input(id='pressure-value', type='number', value=100, className="mb-2"),
+                dbc.Label("Specific Gravity:", className='mt-2 text-light'),
+                dbc.Input(id='pressure-sg', type='number', value=1, className="mb-2"),
+                dbc.Button('Convert', id='pressure-convert-btn', color='primary', className='mt-2'),
+                html.Div(id='pressure-output', className='mt-4 text-light')
+            ], width=6)
+        ])
+    ], fluid=True, className="bg-dark")
 
 @app.callback(
     Output('pressure-output', 'children'),
@@ -248,15 +336,20 @@ def convert_pressure_to_head(n_clicks, pressure, sg):
         return html.P(f"Head: {head_ft:.2f} ft")
     return ''
 
+# Dynamic to Kinematic Viscosity Layout and Callback
 def viscosity_conversion_layout():
-    return html.Div([
-        dbc.Label("Dynamic Viscosity (cP):"),
-        dbc.Input(id='dynamic-viscosity', type='number', value=1),
-        dbc.Label("Density (kg/m³):", className='mt-2'),
-        dbc.Input(id='fluid-density', type='number', value=1000),
-        dbc.Button('Convert', id='viscosity-convert-btn', color='primary', className='mt-2'),
-        html.Div(id='viscosity-output', className='mt-2')
-    ])
+    return dbc.Container([
+        dbc.Row([
+            dbc.Col([
+                dbc.Label("Dynamic Viscosity (cP):", className="text-light"),
+                dbc.Input(id='dynamic-viscosity', type='number', value=1, className="mb-2"),
+                dbc.Label("Density (kg/m³):", className='mt-2 text-light'),
+                dbc.Input(id='fluid-density', type='number', value=1000, className="mb-2"),
+                dbc.Button('Convert', id='viscosity-convert-btn', color='primary', className='mt-2'),
+                html.Div(id='viscosity-output', className='mt-4 text-light')
+            ], width=6)
+        ])
+    ], fluid=True, className="bg-dark")
 
 @app.callback(
     Output('viscosity-output', 'children'),
@@ -270,12 +363,6 @@ def convert_dynamic_to_kinematic(n_clicks, dynamic_viscosity, density):
         return html.P(f"Kinematic Viscosity: {kinematic_viscosity:.2f} cSt")
     return ''
 
-def friction_factor_layout():
-    return dbc.Container([
-        dbc.Row(dbc.Col(html.H2("Friction Factor Calculator", className="text-center my-4"))),
-        # Input fields for friction factor calculation
-        # Replace with actual inputs needed for your formulas
-        html.P("Friction factor calculation inputs go here."),
-        # Output placeholder
-        html.Div(id='ff-output')
-    ], fluid=True)
+# Run the app
+if __name__ == '__main__':
+    app.run_server(debug=True)
