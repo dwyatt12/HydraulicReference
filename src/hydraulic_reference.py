@@ -215,7 +215,7 @@ def calculate_friction_factor(n_clicks, diameter_in, flow_rate_bpd, roughness, v
 
         # Clamond's method
         # Implemented Clamond's approximation formula
-        X1 = roughness * diameter_in * reynolds_number * 0.1239681863354175460160858261654858382699  # (log(10)/18.574).evalf(40)
+        X1 = roughness * diameter_ft * reynolds_number * 0.1239681863354175460160858261654858382699  # (log(10)/18.574).evalf(40)
         X2 = log(reynolds_number) - 0.7793974884556819406441139701653776731705  # log(log(10)/5.02).evalf(40)
         F = X2 - 0.2
         X1F = X1 + F
