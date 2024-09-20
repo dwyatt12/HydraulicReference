@@ -195,7 +195,7 @@ def friction_factor_layout():
     State('ff-specific-gravity', 'value'),
     State('ff-viscosity', 'value')
 )
-def calculate_friction_factor(n_clicks, diameter_in, flow_rate_bpd, roughness, viscosity_cst):
+def calculate_friction_factor(n_clicks, diameter_in, flow_rate_bpd, roughness, specific_gravity, viscosity_cst):
     if n_clicks:
         # Convert inputs to consistent units
         diameter_ft = diameter_in / 12  # Convert diameter to feet
@@ -240,14 +240,6 @@ def calculate_friction_factor(n_clicks, diameter_in, flow_rate_bpd, roughness, v
         # Swamee-Jain equation
         friction_factor_sj = 0.25 / (math.log10(roughness / 3.7 + 5.74 / (reynolds_number ** 0.9))) ** 2
         methods['Swamee-Jain'] = friction_factor_sj
-
-        # Moody approximation (Blasius equation for smooth pipes when Re < 100,000)
-        if reynolds_number < 100000:
-            friction_factor_moody = 0.3164 / (reynolds_number ** 0.25)
-        else:
-            # Use a different approximation for higher Reynolds numbers
-            friction_factor_moody = 0.184 / (reynolds_number ** 0.2)
-        methods['Moody'] = friction_factor_moody
 
         # Pressure Loss Calculations (Darcy-Weisbach equation)
         # Pressure loss per mile in psi
