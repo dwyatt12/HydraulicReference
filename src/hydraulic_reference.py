@@ -171,13 +171,15 @@ def friction_factor_layout():
         html.H2("Friction Factor Calculator", style={'text-align': 'center', 'margin-top': '20px'}),
         html.Div([
             html.Label("Diameter (inches):"),
-            dcc.Input(id='ff-diameter', type='number', value=24, style={'margin-bottom': '10px'}),
+            dcc.Input(id='ff-diameter', type='number', value=12, style={'margin-bottom': '10px'}),
             html.Label("Flow Rate (barrels per day):"),
             dcc.Input(id='ff-flow-rate', type='number', value=100000, style={'margin-bottom': '10px'}),
             html.Label("Relative Roughness (ε/D):"),
             dcc.Input(id='ff-roughness', type='number', value=0.0001, style={'margin-bottom': '10px'}),
             html.Label("Kinematic Viscosity (cSt):"),
             dcc.Input(id='ff-viscosity', type='number', value=1, style={'margin-bottom': '10px'}),
+            html.Label("Specific Gravity:"),
+            dcc.Input(id='ff-specific-gravity', type='number', value=1, style={'margin-bottom': '10px'}),
             html.Button('Calculate', id='ff-calculate-btn', style={'margin-top': '10px'}),
             html.Hr(),
             html.Div(id='ff-output')
@@ -190,6 +192,7 @@ def friction_factor_layout():
     State('ff-diameter', 'value'),
     State('ff-flow-rate', 'value'),
     State('ff-roughness', 'value'),
+    State('ff-specific-gravity', 'value'),
     State('ff-viscosity', 'value')
 )
 def calculate_friction_factor(n_clicks, diameter_in, flow_rate_bpd, roughness, viscosity_cst):
