@@ -4,7 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="981505c8-8350-41f1-97a2-84e33f56df84" name="Changes" comment="Updating friction factors" />
+    <list default="true" id="981505c8-8350-41f1-97a2-84e33f56df84" name="Changes" comment="Updating friction factors">
+      <change beforePath="$PROJECT_DIR$/src/hydraulic_reference.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hydraulic_reference.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -20,18 +22,18 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "dwyatt12"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;dwyatt12&quot;
   }
-}]]></component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/dwyatt12/HydraulicReference.git",
-    "accountId": "939c58d9-6036-4e5e-bf1e-619a2cde2168"
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/dwyatt12/HydraulicReference.git&quot;,
+    &quot;accountId&quot;: &quot;939c58d9-6036-4e5e-bf1e-619a2cde2168&quot;
   }
-}]]></component>
+}</component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 6
 }</component>
@@ -97,7 +99,15 @@
       <option name="project" value="LOCAL" />
       <updated>1726798252431</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Updating friction factors">
+      <option name="closed" value="true" />
+      <created>1726874001082</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1726874001082</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">

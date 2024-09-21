@@ -12,12 +12,6 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.CYBORG], suppress_cal
 # Define the server variable for deployment
 server = app.server
 
-# Custom CSS styles for additional styling (if any)
-# For example, if you have a custom CSS file, you can include it here
-# app.css.append_css({
-#     'external_url': '/assets/custom_styles.css'
-# })
-
 # Landing page layout
 app.layout = dbc.Container([
     dbc.Row([
@@ -26,9 +20,8 @@ app.layout = dbc.Container([
     dbc.Row([
         dbc.Col([
             dbc.Button("Pipeline Volume", id="pipeline-volume-btn", color="primary", className="m-2", size='lg'),
-            dbc.Button("Reynolds Number & Velocity", id="reynolds-number-btn", color="secondary", className="m-2", size='lg'),
-            dbc.Button("Friction Factor", id="friction-factor-btn", color="success", className="m-2", size='lg'),
-            dbc.Button("Energy Needs", id="energy-needs-btn", color="warning", className="m-2", size='lg'),
+            dbc.Button("Fluid Flow", id="friction-factor-btn", color="success", className="m-2", size='lg'),
+            dbc.Button("Power & Energy", id="energy-needs-btn", color="warning", className="m-2", size='lg'),
             dbc.Button("Unit Conversions", id="unit-conversions-btn", color="info", className="m-2", size='lg'),
         ], className="text-center")
     ]),
@@ -40,12 +33,11 @@ app.layout = dbc.Container([
 @app.callback(
     Output('page-content', 'children'),
     [Input('pipeline-volume-btn', 'n_clicks'),
-     Input('reynolds-number-btn', 'n_clicks'),
      Input('friction-factor-btn', 'n_clicks'),
      Input('energy-needs-btn', 'n_clicks'),
      Input('unit-conversions-btn', 'n_clicks')]
 )
-def display_page(pv_clicks, rn_clicks, ff_clicks, en_clicks, uc_clicks):
+def display_page(pv_clicks, ff_clicks, en_clicks, uc_clicks):
     ctx = callback_context
 
     if not ctx.triggered:
@@ -55,8 +47,6 @@ def display_page(pv_clicks, rn_clicks, ff_clicks, en_clicks, uc_clicks):
 
     if button_id == 'pipeline-volume-btn':
         return pipeline_volume_layout()
-    elif button_id == 'reynolds-number-btn':
-        return reynolds_number_layout()
     elif button_id == 'friction-factor-btn':
         return friction_factor_layout()
     elif button_id == 'energy-needs-btn':
@@ -71,20 +61,30 @@ def pipeline_volume_layout():
     return dbc.Container([
         dbc.Row(dbc.Col(html.H2("Pipeline Volume Calculator", className="text-center my-4 text-light"))),
         dbc.Row([
-            dbc.Col([
-                dbc.Label("Diameter (inches):", className="text-light"),
-                dbc.Input(id='pv-diameter', type='number', value=24, className="mb-2"),
-            ], width=4),
-            dbc.Col([
-                dbc.Label("Wall Thickness (inches):", className="text-light"),
-                dbc.Input(id='pv-wall-thickness', type='number', value=0.5, className="mb-2"),
-            ], width=4),
-            dbc.Col([
-                dbc.Label("Distance (miles):", className="text-light"),
-                dbc.Input(id='pv-distance', type='number', value=10, className="mb-2"),
-            ], width=4),
-        ], className="mb-3"),
-        dbc.Button('Calculate', id='pv-calculate-btn', color='primary', className="mb-3"),
+            dbc.Col(
+                dbc.Card([
+                    dbc.CardBody([
+                        dbc.Label("Diameter:", className="text-white"),
+                        dbc.InputGroup([
+                            dbc.Input(id='pv-diameter', type='text', value="{:,}".format(24), className="mb-2"),
+                            dbc.InputGroupText("inches")
+                        ]),
+                        dbc.Label("Wall Thickness:", className="text-white"),
+                        dbc.InputGroup([
+                            dbc.Input(id='pv-wall-thickness', type='text', value="{:,}".format(0.5), className="mb-2"),
+                            dbc.InputGroupText("inches")
+                        ]),
+                        dbc.Label("Distance:", className="text-white"),
+                        dbc.InputGroup([
+                            dbc.Input(id='pv-distance', type='text', value="{:,}".format(10), className="mb-2"),
+                            dbc.InputGroupText("miles")
+                        ]),
+                        dbc.Button('Calculate', id='pv-calculate-btn', color='primary', className="mt-3"),
+                    ])
+                ], className="mb-4"),
+                width=6
+            )
+        ], justify='center'),
         html.Hr(className="my-4"),
         html.Div(id='pv-output', className="text-light")
     ], fluid=True, className="bg-dark")
@@ -98,6 +98,11 @@ def pipeline_volume_layout():
 )
 def calculate_pipeline_volume(n_clicks, diameter, wall_thickness, distance):
     if n_clicks:
+        # Remove commas and convert to float
+        diameter = float(diameter.replace(',', ''))
+        wall_thickness = float(wall_thickness.replace(',', ''))
+        distance = float(distance.replace(',', ''))
+
         # Calculations
         inner_diameter = diameter - 2 * wall_thickness  # inches
         radius = inner_diameter / 2  # inches
@@ -107,46 +112,25 @@ def calculate_pipeline_volume(n_clicks, diameter, wall_thickness, distance):
         volume_cuft = area_sqft * length_ft  # cubic feet
         volume_bbl = volume_cuft / 5.614583  # barrels (1 bbl = 5.614583 cubic feet)
 
+        # Format outputs with commas
+        volume_cuft_formatted = "{:,}".format(round(volume_cuft, 2))
+        volume_bbl_formatted = "{:,}".format(round(volume_bbl, 2))
+
         # Output
         return html.Div([
             html.H4("Results:", className="text-light"),
-            html.P(f"Pipeline Volume: {volume_cuft:.2f} cubic feet"),
-            html.P(f"Pipeline Volume: {volume_bbl:.2f} barrels")
+            html.P(f"Pipeline Volume: {volume_cuft_formatted} cubic feet"),
+            html.P(f"Pipeline Volume: {volume_bbl_formatted} barrels")
         ])
     return ''
 
-# Reynolds Number & Pipeline Velocity Calculator Layout and Callback
-def reynolds_number_layout():
-    return dbc.Container([
-        dbc.Row(dbc.Col(html.H2("Reynolds Number & Velocity Calculator", className="text-center my-4 text-light"))),
-        dbc.Row([
-            dbc.Col([
-                dbc.Label("Diameter (inches):", className="text-light"),
-                dbc.Input(id='rn-diameter', type='number', value=24, className="mb-2"),
-            ], width=4),
-            dbc.Col([
-                dbc.Label("Flow Rate (barrels per day):", className="text-light"),
-                dbc.Input(id='rn-flow-rate', type='number', value=100000, className="mb-2"),
-            ], width=4),
-            dbc.Col([
-                dbc.Label("Kinematic Viscosity (cSt):", className="text-light"),
-                dbc.Input(id='rn-viscosity', type='number', value=1, className="mb-2"),
-            ], width=4),
-        ], className="mb-3"),
-        dbc.Button('Calculate', id='rn-calculate-btn', color='primary', className="mb-3"),
-        html.Hr(className="my-4"),
-        html.Div(id='rn-output', className="text-light")
-    ], fluid=True, className="bg-dark")
-
-@app.callback(
-    Output('rn-output', 'children'),
-    Input('rn-calculate-btn', 'n_clicks'),
-    State('rn-diameter', 'value'),
-    State('rn-flow-rate', 'value'),
-    State('rn-viscosity', 'value')
-)
 def calculate_reynolds_number(n_clicks, diameter, flow_rate, viscosity):
     if n_clicks:
+        # Remove commas and convert to float
+        diameter = float(diameter.replace(',', ''))
+        flow_rate = float(flow_rate.replace(',', ''))
+        viscosity = float(viscosity.replace(',', ''))
+
         # Calculations
         diameter_ft = diameter / 12  # feet
         area_sqft = math.pi * (diameter_ft / 2) ** 2  # square feet
@@ -157,46 +141,94 @@ def calculate_reynolds_number(n_clicks, diameter, flow_rate, viscosity):
         viscosity_m2s = viscosity * 1e-6  # cSt to m²/s
         reynolds_number = (velocity_mps * diameter_m) / viscosity_m2s
 
+        # Format outputs with commas
+        velocity_fps_formatted = "{:,}".format(round(velocity_fps, 2))
+        reynolds_number_formatted = "{:,}".format(round(reynolds_number, 2))
+
         # Output
         return html.Div([
             html.H4("Results:", className="text-light"),
-            html.P(f"Pipeline Velocity: {velocity_fps:.2f} ft/s"),
-            html.P(f"Reynolds Number: {reynolds_number:.2f}")
+            html.P(f"Pipeline Velocity: {velocity_fps_formatted} ft/s"),
+            html.P(f"Reynolds Number: {reynolds_number_formatted}")
         ])
     return ''
 
+def determine_flow_regime(reynolds_number):
+    if reynolds_number > 4000:
+        return 'Turbulent'
+    elif 2000 <= reynolds_number <= 4000:
+        return 'Transition'
+    else:
+        return 'Laminar'
+
 # Friction Factor Calculator Layout and Callback
 def friction_factor_layout():
-    return html.Div([
-        html.H2("Friction Factor Calculator", style={'text-align': 'center', 'margin-top': '20px'}),
-        html.Div([
-            html.Label("Diameter (inches):"),
-            dcc.Input(id='ff-diameter', type='number', value=12, style={'margin-bottom': '10px'}),
-            html.Label("Flow Rate (barrels per day):"),
-            dcc.Input(id='ff-flow-rate', type='number', value=100000, style={'margin-bottom': '10px'}),
-            html.Label("Relative Roughness (ε/D):"),
-            dcc.Input(id='ff-roughness', type='number', value=0.0001, style={'margin-bottom': '10px'}),
-            html.Label("Kinematic Viscosity (cSt):"),
-            dcc.Input(id='ff-viscosity', type='number', value=1, style={'margin-bottom': '10px'}),
-            html.Label("Specific Gravity:"),
-            dcc.Input(id='ff-specific-gravity', type='number', value=1, style={'margin-bottom': '10px'}),
-            html.Button('Calculate', id='ff-calculate-btn', style={'margin-top': '10px'}),
-            html.Hr(),
-            html.Div(id='ff-output')
-        ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})
-    ])
+    return dbc.Container([
+        dbc.Row(dbc.Col(html.H2("Friction Factor Calculator", className="text-center my-4 text-light"))),
+        dbc.Row([
+            dbc.Col(
+                dbc.Card([
+                    dbc.CardBody([
+                        dbc.Label("Diameter:", className="text-white"),
+                        dbc.InputGroup([
+                            dbc.Input(id='ff-diameter', type='text', value="{:,}".format(12), className="mb-2"),
+                            dbc.InputGroupText("inches")
+                        ]),
+                        dbc.Label("Flow Rate:", className="text-white"),
+                        dbc.InputGroup([
+                            dbc.Input(id='ff-flow-rate', type='text', value="{:,}".format(100000), className="mb-2"),
+                            dbc.InputGroupText("barrels per day")
+                        ]),
+                        dbc.Label("Roughness:", className="text-white"),
+                        dbc.InputGroup([
+                            dbc.Input(id='ff-roughness-ft', type='text', value="{:,.5f}".format(0.00015), className="mb-2"),
+                            dbc.InputGroupText("feet")
+                        ]),
+                        dbc.Label("Kinematic Viscosity:", className="text-white"),
+                        dbc.InputGroup([
+                            dbc.Input(id='ff-viscosity', type='text', value="{:,}".format(3.6), className="mb-2"),
+                            dbc.InputGroupText("cSt")
+                        ]),
+                        dbc.Label("Specific Gravity:", className="text-white"),
+                        dbc.InputGroup([
+                            dbc.Input(id='ff-specific-gravity', type='text', value="{:,}".format(0.84), className="mb-2"),
+                        ]),
+                        dbc.Label("Drag Reduction:", className="text-white"),
+                        dbc.InputGroup([
+                            dbc.Input(id='ff-drag-reduction', type='', value="0%", className="mb-2"),
+                            dbc.InputGroupText("%")
+                        ]),
+                        dbc.Button('Calculate', id='ff-calculate-btn', color='primary', className="mt-3"),
+                    ])
+                ], className="mb-4"),
+                width=6
+            )
+        ], justify='center'),
+        html.Hr(className="my-4"),
+        html.Div(id='ff-output', className="text-light")
+    ], fluid=True, className="bg-dark")
 
 @app.callback(
     Output('ff-output', 'children'),
     Input('ff-calculate-btn', 'n_clicks'),
     State('ff-diameter', 'value'),
     State('ff-flow-rate', 'value'),
-    State('ff-roughness', 'value'),
+    State('ff-roughness-ft', 'value'),
     State('ff-specific-gravity', 'value'),
-    State('ff-viscosity', 'value')
+    State('ff-viscosity', 'value'),
+    State('ff-drag-reduction', 'value')
 )
-def calculate_friction_factor(n_clicks, diameter_in, flow_rate_bpd, roughness, specific_gravity, viscosity_cst):
+
+def calculate_friction_factor(n_clicks, diameter_in, flow_rate_bpd, roughness_ft, specific_gravity, viscosity_cst, drag_reduction):
     if n_clicks:
+        # Remove commas and convert to float
+        diameter_in = float(diameter_in.replace(',', ''))
+        flow_rate_bpd = float(flow_rate_bpd.replace(',', ''))
+        roughness_ft = float(roughness_ft.replace(',', ''))
+        specific_gravity = float(specific_gravity.replace(',', ''))
+        viscosity_cst = float(viscosity_cst.replace(',', ''))
+        drag_reduction = float(drag_reduction.replace('%',''))/100
+
         # Convert inputs to consistent units
         diameter_ft = diameter_in / 12  # Convert diameter to feet
         diameter_m = diameter_ft * 0.3048  # Convert diameter to meters
@@ -211,14 +243,17 @@ def calculate_friction_factor(n_clicks, diameter_in, flow_rate_bpd, roughness, s
         methods = {}
         # Colebrook-White equation using fsolve
         def colebrook(f):
-            return 1.0 / math.sqrt(f) + 2.0 * math.log10(roughness / 3.7 + 2.51 / (reynolds_number * math.sqrt(f)))
+            return 1.0 / math.sqrt(f) + 2.0 * math.log10(roughness_ft / 3.7 + 2.51 / (reynolds_number * math.sqrt(f)))
         initial_guess = 0.02
         friction_factor_cw = fsolve(colebrook, initial_guess)[0]
         methods['Colebrook-White'] = friction_factor_cw
 
-        # Clamond's method
-        # Implemented Clamond's approximation formula
-        X1 = roughness * diameter_ft * reynolds_number * 0.1239681863354175460160858261654858382699  # (log(10)/18.574).evalf(40)
+        # Swamee-Jain equation
+        friction_factor_sj = 0.25 / (math.log10(roughness_ft / 3.7 + 5.74 / (reynolds_number ** 0.9))) ** 2
+        methods['Swamee-Jain'] = friction_factor_sj
+
+        # Clamond equation
+        X1 = (roughness_ft / diameter_ft) * reynolds_number * 0.1239681863354175460160858261654858382699  # (log(10)/18.574).evalf(40)
         X2 = log(reynolds_number) - 0.7793974884556819406441139701653776731705  # log(log(10)/5.02).evalf(40)
         F = X2 - 0.2
         X1F = X1 + F
@@ -237,10 +272,6 @@ def calculate_friction_factor(n_clicks, diameter_in, flow_rate_bpd, roughness, s
         friction_factor_clamond = 1.325474527619599502640416597148504422899 * (F * F)  # ((0.5*log(10))**2).evalf(40)
         methods['Clamond'] = friction_factor_clamond
 
-        # Swamee-Jain equation
-        friction_factor_sj = 0.25 / (math.log10(roughness / 3.7 + 5.74 / (reynolds_number ** 0.9))) ** 2
-        methods['Swamee-Jain'] = friction_factor_sj
-
         # Pressure Loss Calculations (Darcy-Weisbach equation)
         # Pressure loss per mile in psi
         pressure_losses = {}
@@ -252,10 +283,10 @@ def calculate_friction_factor(n_clicks, diameter_in, flow_rate_bpd, roughness, s
             L = 5280  # Length in feet (1 mile)
             D = diameter_ft  # Diameter in feet
             v = velocity_fps  # Velocity in ft/s
-            rho = 62.4  # Density in lb/ft³
-            delta_p = f * (L / D) * (rho * v ** 2 / 2)  # Pressure loss in lb/ft²
-            delta_p_psi = delta_p / 144  # Convert to psi
-            pressure_losses[method] = delta_p_psi
+            g = 32.17405 # Gravitational acceleration in ft/s^2
+            head_loss = L * f * (v ** 2) / (D * 2 * g)
+            delta_p_psi = head_loss * specific_gravity / 2.31
+            pressure_losses[method] = delta_p_psi * (1 - drag_reduction)
 
         # Create Bar Chart
         import plotly.graph_objs as go
@@ -265,44 +296,56 @@ def calculate_friction_factor(n_clicks, diameter_in, flow_rate_bpd, roughness, s
                 name=method,
                 x=[method],
                 y=[pressure_losses[method]],
-                text=[f"{pressure_losses[method]:.2f} psi"],
+                text=[f"{pressure_losses[method]:,.1f} psi"],
                 textposition='auto'
             )
             for method in methods.keys()
         ])
 
         fig.update_layout(
-            title='Pressure Loss per Mile by Friction Factor Method',
+            title='Friction Factor Comparison',
             xaxis_title='Method',
             yaxis_title='Pressure Loss (psi)',
-            template='plotly_dark',
+            template='seaborn',
             showlegend=False
         )
 
         # Output
         return html.Div([
-            html.H4(f"Reynolds Number: {reynolds_number:.2f}"),
+            html.H4(f"Flow Details", className="text-white"),
+            html.Ul([
+                html.Li(f"Velocity: {velocity_fps:,.1f} ft/s"),
+                html.Li(f"Reynolds Number: {reynolds_number:,.0f}"),
+                html.Li(f"Flow Regime: {determine_flow_regime(reynolds_number)}")
+            ]),
             html.Hr(),
-            html.H4("Friction Factors:"),
+            html.H4("Friction Factors", className="text-white"),
             html.Ul([html.Li(f"{method}: {f:.6f}") for method, f in methods.items()]),
             html.Hr(),
-            html.H4("Pressure Loss per Mile:"),
+            html.H4(f"Pressure Loss per Mile (at {drag_reduction:.0%} DR)", className="text-white"),
             dcc.Graph(figure=fig)
         ])
     return ''
-
 
 # Energy Needs Calculator Layout and Callback
 def energy_needs_layout():
     return dbc.Container([
         dbc.Row(dbc.Col(html.H2("Energy Needs Calculator", className="text-center my-4 text-light"))),
         dbc.Row([
-            dbc.Col([
-                dbc.Label("Pump Horsepower (HP):", className="text-light"),
-                dbc.Input(id='en-horsepower', type='number', value=100, className="mb-2"),
-            ], width=6),
-        ], className="mb-3"),
-        dbc.Button('Calculate', id='en-calculate-btn', color='primary', className="mb-3"),
+            dbc.Col(
+                dbc.Card([
+                    dbc.CardBody([
+                        dbc.Label("Pump Horsepower:", className="text-white"),
+                        dbc.InputGroup([
+                            dbc.Input(id='en-horsepower', type='text', value="{:,}".format(100), className="mb-2"),
+                            dbc.InputGroupText("HP")
+                        ]),
+                        dbc.Button('Calculate', id='en-calculate-btn', color='primary', className="mt-3"),
+                    ])
+                ], className="mb-4"),
+                width=4
+            )
+        ], justify='center'),
         html.Hr(className="my-4"),
         html.Div(id='en-output', className="text-light")
     ], fluid=True, className="bg-dark")
@@ -314,13 +357,18 @@ def energy_needs_layout():
 )
 def calculate_energy_needs(n_clicks, horsepower):
     if n_clicks:
+        horsepower = float(horsepower.replace(',', ''))
+
         # Conversion
         kilowatts = horsepower * 0.7457  # 1 HP = 0.7457 kW
+
+        # Format output
+        kilowatts_formatted = "{:,}".format(round(kilowatts, 2))
 
         # Output
         return html.Div([
             html.H4("Results:", className="text-light"),
-            html.P(f"Energy Needed: {kilowatts:.2f} kW")
+            html.P(f"Energy Needed: {kilowatts_formatted} kW")
         ])
     return ''
 
@@ -353,13 +401,21 @@ def render_tab_content(active_tab):
 def api_to_sg_layout():
     return dbc.Container([
         dbc.Row([
-            dbc.Col([
-                dbc.Label("Degrees API:", className="text-light"),
-                dbc.Input(id='api-value', type='number', value=30, className="mb-2"),
-                dbc.Button('Convert', id='api-convert-btn', color='primary', className='mt-2'),
-                html.Div(id='api-output', className='mt-4 text-light')
-            ], width=6)
-        ])
+            dbc.Col(
+                dbc.Card([
+                    dbc.CardBody([
+                        dbc.Label("Degrees API:", className="text-white"),
+                        dbc.InputGroup([
+                            dbc.Input(id='api-value', type='text', value="{:,}".format(30), className="mb-2"),
+                            dbc.InputGroupText("°API")
+                        ]),
+                        dbc.Button('Convert', id='api-convert-btn', color='primary', className='mt-2'),
+                        html.Div(id='api-output', className='mt-4 text-light')
+                    ])
+                ], className="mb-4"),
+                width=4
+            )
+        ], justify='center')
     ], fluid=True, className="bg-dark")
 
 @app.callback(
@@ -369,6 +425,7 @@ def api_to_sg_layout():
 )
 def convert_api_to_sg(n_clicks, api):
     if n_clicks:
+        api = float(api.replace(',', ''))
         sg = 141.5 / (131.5 + api)
         return html.P(f"Specific Gravity: {sg:.4f}")
     return ''
@@ -377,15 +434,25 @@ def convert_api_to_sg(n_clicks, api):
 def pressure_to_head_layout():
     return dbc.Container([
         dbc.Row([
-            dbc.Col([
-                dbc.Label("Pressure (psi):", className="text-light"),
-                dbc.Input(id='pressure-value', type='number', value=100, className="mb-2"),
-                dbc.Label("Specific Gravity:", className='mt-2 text-light'),
-                dbc.Input(id='pressure-sg', type='number', value=1, className="mb-2"),
-                dbc.Button('Convert', id='pressure-convert-btn', color='primary', className='mt-2'),
-                html.Div(id='pressure-output', className='mt-4 text-light')
-            ], width=6)
-        ])
+            dbc.Col(
+                dbc.Card([
+                    dbc.CardBody([
+                        dbc.Label("Pressure:", className="text-white"),
+                        dbc.InputGroup([
+                            dbc.Input(id='pressure-value', type='text', value="{:,}".format(100), className="mb-2"),
+                            dbc.InputGroupText("psi")
+                        ]),
+                        dbc.Label("Specific Gravity:", className='mt-2 text-white'),
+                        dbc.InputGroup([
+                            dbc.Input(id='pressure-sg', type='text', value="{:,}".format(1), className="mb-2"),
+                        ]),
+                        dbc.Button('Convert', id='pressure-convert-btn', color='primary', className='mt-2'),
+                        html.Div(id='pressure-output', className='mt-4 text-light')
+                    ])
+                ], className="mb-4"),
+                width=4
+            )
+        ], justify='center')
     ], fluid=True, className="bg-dark")
 
 @app.callback(
@@ -396,23 +463,39 @@ def pressure_to_head_layout():
 )
 def convert_pressure_to_head(n_clicks, pressure, sg):
     if n_clicks:
+        pressure = float(pressure.replace(',', ''))
+        sg = float(sg.replace(',', ''))
+
         head_ft = (pressure * 2.31) / sg  # 1 psi = 2.31 ft head for water (SG=1)
-        return html.P(f"Head: {head_ft:.2f} ft")
+        head_ft_formatted = "{:,}".format(round(head_ft, 2))
+
+        return html.P(f"Head: {head_ft_formatted} ft")
     return ''
 
 # Dynamic to Kinematic Viscosity Layout and Callback
 def viscosity_conversion_layout():
     return dbc.Container([
         dbc.Row([
-            dbc.Col([
-                dbc.Label("Dynamic Viscosity (cP):", className="text-light"),
-                dbc.Input(id='dynamic-viscosity', type='number', value=1, className="mb-2"),
-                dbc.Label("Density (kg/m³):", className='mt-2 text-light'),
-                dbc.Input(id='fluid-density', type='number', value=1000, className="mb-2"),
-                dbc.Button('Convert', id='viscosity-convert-btn', color='primary', className='mt-2'),
-                html.Div(id='viscosity-output', className='mt-4 text-light')
-            ], width=6)
-        ])
+            dbc.Col(
+                dbc.Card([
+                    dbc.CardBody([
+                        dbc.Label("Dynamic Viscosity:", className="text-white"),
+                        dbc.InputGroup([
+                            dbc.Input(id='dynamic-viscosity', type='text', value="{:,}".format(1), className="mb-2"),
+                            dbc.InputGroupText("cP")
+                        ]),
+                        dbc.Label("Density:", className='mt-2 text-white'),
+                        dbc.InputGroup([
+                            dbc.Input(id='fluid-density', type='text', value="{:,}".format(1000), className="mb-2"),
+                            dbc.InputGroupText("kg/m³")
+                        ]),
+                        dbc.Button('Convert', id='viscosity-convert-btn', color='primary', className='mt-2'),
+                        html.Div(id='viscosity-output', className='mt-4 text-light')
+                    ])
+                ], className="mb-4"),
+                width=4
+            )
+        ], justify='center')
     ], fluid=True, className="bg-dark")
 
 @app.callback(
@@ -423,8 +506,13 @@ def viscosity_conversion_layout():
 )
 def convert_dynamic_to_kinematic(n_clicks, dynamic_viscosity, density):
     if n_clicks:
+        dynamic_viscosity = float(dynamic_viscosity.replace(',', ''))
+        density = float(density.replace(',', ''))
+
         kinematic_viscosity = (dynamic_viscosity / density) * 1e6  # cSt
-        return html.P(f"Kinematic Viscosity: {kinematic_viscosity:.2f} cSt")
+        kinematic_viscosity_formatted = "{:,}".format(round(kinematic_viscosity, 2))
+
+        return html.P(f"Kinematic Viscosity: {kinematic_viscosity_formatted} cSt")
     return ''
 
 # Run the app
