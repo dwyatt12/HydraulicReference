@@ -4,7 +4,8 @@ from dash import html, dcc, Input, Output, State, callback_context
 import dash_bootstrap_components as dbc
 import math
 from scipy.optimize import fsolve
-from math import log
+from math import log, sqrt
+import plotly.graph_objs as go
 
 # Initialize the app with a dark Bootstrap stylesheet for styling
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.CYBORG], suppress_callback_exceptions=True)
@@ -124,35 +125,6 @@ def calculate_pipeline_volume(n_clicks, diameter, wall_thickness, distance):
         ])
     return ''
 
-def calculate_reynolds_number(n_clicks, diameter, flow_rate, viscosity):
-    if n_clicks:
-        # Remove commas and convert to float
-        diameter = float(diameter.replace(',', ''))
-        flow_rate = float(flow_rate.replace(',', ''))
-        viscosity = float(viscosity.replace(',', ''))
-
-        # Calculations
-        diameter_ft = diameter / 12  # feet
-        area_sqft = math.pi * (diameter_ft / 2) ** 2  # square feet
-        flow_rate_cfs = (flow_rate * 5.614583) / (24 * 3600)  # bbl/day to cubic feet per second
-        velocity_fps = flow_rate_cfs / area_sqft  # feet per second
-        diameter_m = diameter_ft * 0.3048  # meters
-        velocity_mps = velocity_fps * 0.3048  # meters per second
-        viscosity_m2s = viscosity * 1e-6  # cSt to m²/s
-        reynolds_number = (velocity_mps * diameter_m) / viscosity_m2s
-
-        # Format outputs with commas
-        velocity_fps_formatted = "{:,}".format(round(velocity_fps, 2))
-        reynolds_number_formatted = "{:,}".format(round(reynolds_number, 2))
-
-        # Output
-        return html.Div([
-            html.H4("Results:", className="text-light"),
-            html.P(f"Pipeline Velocity: {velocity_fps_formatted} ft/s"),
-            html.P(f"Reynolds Number: {reynolds_number_formatted}")
-        ])
-    return ''
-
 def determine_flow_regime(reynolds_number):
     if reynolds_number > 4000:
         return 'Turbulent'
@@ -218,7 +190,6 @@ def friction_factor_layout():
     State('ff-viscosity', 'value'),
     State('ff-drag-reduction', 'value')
 )
-
 def calculate_friction_factor(n_clicks, diameter_in, flow_rate_bpd, roughness_ft, specific_gravity, viscosity_cst, drag_reduction):
     if n_clicks:
         # Remove commas and convert to float
@@ -252,25 +223,8 @@ def calculate_friction_factor(n_clicks, diameter_in, flow_rate_bpd, roughness_ft
         friction_factor_sj = 0.25 / (math.log10(roughness_ft / 3.7 + 5.74 / (reynolds_number ** 0.9))) ** 2
         methods['Swamee-Jain'] = friction_factor_sj
 
-        # Clamond equation
-        X1 = (roughness_ft / diameter_ft) * reynolds_number * 0.1239681863354175460160858261654858382699  # (log(10)/18.574).evalf(40)
-        X2 = log(reynolds_number) - 0.7793974884556819406441139701653776731705  # log(log(10)/5.02).evalf(40)
-        F = X2 - 0.2
-        X1F = X1 + F
-        X1F1 = 1. + X1F
-
-        E = (log(X1F) - 0.2) / (X1F1)
-        F = F - (X1F1 + 0.5 * E) * E * (X1F) / (X1F1 + E * (1. + (1.0 / 3.0) * E))
-
-        X1F = X1 + F
-        X1F1 = 1. + X1F
-        E = (log(X1F) + F - X2) / (X1F1)
-
-        b = (X1F1 + E * (1. + 1.0 / 3.0 * E))
-        F = b / (b * F - ((X1F1 + 0.5 * E) * E * (X1F)))
-
-        friction_factor_clamond = 1.325474527619599502640416597148504422899 * (F * F)  # ((0.5*log(10))**2).evalf(40)
-        methods['Clamond'] = friction_factor_clamond
+        # Alternate Method (Using Swamee-Jain again for demonstration)
+        methods['Alternate Method'] = friction_factor_sj
 
         # Pressure Loss Calculations (Darcy-Weisbach equation)
         # Pressure loss per mile in psi
@@ -289,8 +243,6 @@ def calculate_friction_factor(n_clicks, diameter_in, flow_rate_bpd, roughness_ft
             pressure_losses[method] = delta_p_psi * (1 - drag_reduction)
 
         # Create Bar Chart
-        import plotly.graph_objs as go
-
         fig = go.Figure(data=[
             go.Bar(
                 name=method,
@@ -306,7 +258,7 @@ def calculate_friction_factor(n_clicks, diameter_in, flow_rate_bpd, roughness_ft
             title='Friction Factor Comparison',
             xaxis_title='Method',
             yaxis_title='Pressure Loss (psi)',
-            template='seaborn',
+            template='plotly_dark',
             showlegend=False
         )
 
@@ -328,22 +280,50 @@ def calculate_friction_factor(n_clicks, diameter_in, flow_rate_bpd, roughness_ft
     return ''
 
 # Energy Needs Calculator Layout and Callback
+def current_ideal(P, V, phase=3, PF=1):
+    if phase not in (1, 3):
+        raise ValueError('Only 1 and 3 phase power supported')
+    if phase == 3:
+        return (P * 1000) / (V * sqrt(3) * PF)
+    else:
+        return (P * 1000) / (V * PF)
+
 def energy_needs_layout():
     return dbc.Container([
-        dbc.Row(dbc.Col(html.H2("Energy Needs Calculator", className="text-center my-4 text-light"))),
+        dbc.Row(dbc.Col(html.H2("Power & Energy", className="text-center my-4 text-light"))),
         dbc.Row([
             dbc.Col(
                 dbc.Card([
                     dbc.CardBody([
-                        dbc.Label("Pump Horsepower:", className="text-white"),
+                        dbc.Label("Power (kW):", className="text-white"),
                         dbc.InputGroup([
-                            dbc.Input(id='en-horsepower', type='text', value="{:,}".format(100), className="mb-2"),
-                            dbc.InputGroupText("HP")
+                            dbc.Input(id='en-power', type='number', value=750, className="mb-2"),
+                            dbc.InputGroupText("kW")
+                        ]),
+                        dbc.Label("Voltage (Volts):", className="text-white"),
+                        dbc.InputGroup([
+                            dbc.Input(id='en-voltage', type='number', value=220, className="mb-2"),
+                            dbc.InputGroupText("V")
+                        ]),
+                        dbc.Label("Phase:", className="text-white"),
+                        dcc.Dropdown(
+                            id='en-phase',
+                            options=[
+                                {'label': 'Single-phase', 'value': 1},
+                                {'label': 'Three-phase', 'value': 3},
+                            ],
+                            value=3,  # Default to three-phase
+                            className="mb-2"
+                        ),
+                        dbc.Label("Power Factor:", className="text-white"),
+                        dbc.InputGroup([
+                            dbc.Input(id='en-pf', type='number', value=.98, className="mb-2"),
+                            dbc.InputGroupText("")
                         ]),
                         dbc.Button('Calculate', id='en-calculate-btn', color='primary', className="mt-3"),
                     ])
                 ], className="mb-4"),
-                width=4
+                width=6
             )
         ], justify='center'),
         html.Hr(className="my-4"),
@@ -353,22 +333,24 @@ def energy_needs_layout():
 @app.callback(
     Output('en-output', 'children'),
     Input('en-calculate-btn', 'n_clicks'),
-    State('en-horsepower', 'value')
+    State('en-power', 'value'),
+    State('en-voltage', 'value'),
+    State('en-phase', 'value'),
+    State('en-pf', 'value')
 )
-def calculate_energy_needs(n_clicks, horsepower):
+def calculate_energy_needs(n_clicks, power, voltage, phase, power_factor):
     if n_clicks:
-        horsepower = float(horsepower.replace(',', ''))
-
-        # Conversion
-        kilowatts = horsepower * 0.7457  # 1 HP = 0.7457 kW
+        # Perform the current calculation using the provided current_ideal function
+        current = current_ideal(P=power, V=voltage, phase=phase, PF=power_factor)
 
         # Format output
-        kilowatts_formatted = "{:,}".format(round(kilowatts, 2))
+        current_formatted = "{:.2f}".format(current)
 
-        # Output
+        # Output the calculated current
         return html.Div([
             html.H4("Results:", className="text-light"),
-            html.P(f"Energy Needed: {kilowatts_formatted} kW")
+            html.P(f"Calculated Current: {current_formatted} A"),
+            html.P("Does not include power used by the motor’s fan, or starter, or internal losses.")
         ])
     return ''
 
@@ -397,7 +379,7 @@ def render_tab_content(active_tab):
         return viscosity_conversion_layout()
     return ''
 
-# Degrees API to Specific Gravity Layout and Callback
+# Degrees API to Specific Gravity Layout
 def api_to_sg_layout():
     return dbc.Container([
         dbc.Row([
@@ -406,11 +388,15 @@ def api_to_sg_layout():
                     dbc.CardBody([
                         dbc.Label("Degrees API:", className="text-white"),
                         dbc.InputGroup([
-                            dbc.Input(id='api-value', type='text', value="{:,}".format(30), className="mb-2"),
+                            dbc.Input(id='api-value', type='number', value=30, className="mb-2"),
                             dbc.InputGroupText("°API")
                         ]),
-                        dbc.Button('Convert', id='api-convert-btn', color='primary', className='mt-2'),
-                        html.Div(id='api-output', className='mt-4 text-light')
+                        dbc.Label("Specific Gravity:", className="text-white"),
+                        dbc.InputGroup([
+                            dbc.Input(id='sg-value', type='number', value=0.876, className="mb-2"),
+                            dbc.InputGroupText("")
+                        ]),
+                        dbc.Alert(id='api-error-message', color='danger', dismissable=True, is_open=False, className='mt-2'),
                     ])
                 ], className="mb-4"),
                 width=4
@@ -418,36 +404,68 @@ def api_to_sg_layout():
         ], justify='center')
     ], fluid=True, className="bg-dark")
 
+# Bidirectional conversion between API and SG with error handling
 @app.callback(
-    Output('api-output', 'children'),
-    Input('api-convert-btn', 'n_clicks'),
-    State('api-value', 'value')
+    [Output('api-value', 'value'),
+     Output('sg-value', 'value'),
+     Output('api-error-message', 'children'),
+     Output('api-error-message', 'is_open')],
+    [Input('api-value', 'value'),
+     Input('sg-value', 'value')]
 )
-def convert_api_to_sg(n_clicks, api):
-    if n_clicks:
-        api = float(api.replace(',', ''))
-        sg = 141.5 / (131.5 + api)
-        return html.P(f"Specific Gravity: {sg:.4f}")
-    return ''
+def convert_api_to_sg(api, sg):
+    ctx = callback_context
+    error_message = ''
+    is_open = False
+    if not ctx.triggered:
+        return api, sg, error_message, is_open
+    else:
+        input_id = ctx.triggered[0]['prop_id'].split('.')[0]
+        try:
+            if input_id == 'api-value':
+                if api is None:
+                    error_message = 'Please enter a valid API value.'
+                    is_open = True
+                    return api, sg, error_message, is_open
+                # Convert from API to SG
+                sg = 141.5 / (131.5 + api)
+                return api, round(sg, 4), error_message, is_open
+            elif input_id == 'sg-value':
+                if sg is None or sg == 0:
+                    error_message = 'Specific Gravity cannot be zero.'
+                    is_open = True
+                    return api, sg, error_message, is_open
+                # Convert from SG to API
+                api = 141.5 / sg - 131.5
+                return round(api, 2), sg, error_message, is_open
+        except Exception as e:
+            error_message = f"An error occurred: {str(e)}"
+            is_open = True
+            return api, sg, error_message, is_open
+    return api, sg, error_message, is_open
 
-# Pressure to Head Layout and Callback
+# Pressure to Head Layout
 def pressure_to_head_layout():
     return dbc.Container([
         dbc.Row([
             dbc.Col(
                 dbc.Card([
                     dbc.CardBody([
-                        dbc.Label("Pressure:", className="text-white"),
+                        dbc.Label("Pressure (psi):", className="text-white"),
                         dbc.InputGroup([
-                            dbc.Input(id='pressure-value', type='text', value="{:,}".format(100), className="mb-2"),
+                            dbc.Input(id='pressure-value', type='number', value=100, className="mb-2"),
                             dbc.InputGroupText("psi")
+                        ]),
+                        dbc.Label("Head (ft):", className='text-white'),
+                        dbc.InputGroup([
+                            dbc.Input(id='head-value', type='number', value=231, className="mb-2"),
+                            dbc.InputGroupText("ft")
                         ]),
                         dbc.Label("Specific Gravity:", className='mt-2 text-white'),
                         dbc.InputGroup([
-                            dbc.Input(id='pressure-sg', type='text', value="{:,}".format(1), className="mb-2"),
+                            dbc.Input(id='pressure-sg', type='number', value=1, className="mb-2"),
                         ]),
-                        dbc.Button('Convert', id='pressure-convert-btn', color='primary', className='mt-2'),
-                        html.Div(id='pressure-output', className='mt-4 text-light')
+                        dbc.Alert(id='pressure-error-message', color='danger', dismissable=True, is_open=False, className='mt-2'),
                     ])
                 ], className="mb-4"),
                 width=4
@@ -455,42 +473,73 @@ def pressure_to_head_layout():
         ], justify='center')
     ], fluid=True, className="bg-dark")
 
+# Bidirectional conversion between Pressure and Head with error handling
 @app.callback(
-    Output('pressure-output', 'children'),
-    Input('pressure-convert-btn', 'n_clicks'),
-    State('pressure-value', 'value'),
-    State('pressure-sg', 'value')
+    [Output('pressure-value', 'value'),
+     Output('head-value', 'value'),
+     Output('pressure-error-message', 'children'),
+     Output('pressure-error-message', 'is_open')],
+    [Input('pressure-value', 'value'),
+     Input('head-value', 'value'),
+     Input('pressure-sg', 'value')]
 )
-def convert_pressure_to_head(n_clicks, pressure, sg):
-    if n_clicks:
-        pressure = float(pressure.replace(',', ''))
-        sg = float(sg.replace(',', ''))
+def convert_pressure_to_head(pressure, head, sg):
+    ctx = callback_context
+    error_message = ''
+    is_open = False
+    if not ctx.triggered:
+        return pressure, head, error_message, is_open
+    else:
+        input_id = ctx.triggered[0]['prop_id'].split('.')[0]
+        try:
+            if sg is None or sg == 0:
+                error_message = 'Specific Gravity cannot be zero.'
+                is_open = True
+                return pressure, head, error_message, is_open
+            if input_id == 'pressure-value':
+                if pressure is None:
+                    error_message = 'Please enter a valid pressure value.'
+                    is_open = True
+                    return pressure, head, error_message, is_open
+                # Convert pressure to head
+                head = (pressure * 2.31) / sg
+                return pressure, round(head, 2), error_message, is_open
+            elif input_id == 'head-value':
+                if head is None:
+                    error_message = 'Please enter a valid head value.'
+                    is_open = True
+                    return pressure, head, error_message, is_open
+                # Convert head to pressure
+                pressure = (head * sg) / 2.31
+                return round(pressure, 2), head, error_message, is_open
+        except Exception as e:
+            error_message = f"An error occurred: {str(e)}"
+            is_open = True
+            return pressure, head, error_message, is_open
+    return pressure, head, error_message, is_open
 
-        head_ft = (pressure * 2.31) / sg  # 1 psi = 2.31 ft head for water (SG=1)
-        head_ft_formatted = "{:,}".format(round(head_ft, 2))
-
-        return html.P(f"Head: {head_ft_formatted} ft")
-    return ''
-
-# Dynamic to Kinematic Viscosity Layout and Callback
+# Dynamic to Kinematic Viscosity Layout
 def viscosity_conversion_layout():
     return dbc.Container([
         dbc.Row([
             dbc.Col(
                 dbc.Card([
                     dbc.CardBody([
-                        dbc.Label("Dynamic Viscosity:", className="text-white"),
+                        dbc.Label("Dynamic Viscosity (cP):", className="text-white"),
                         dbc.InputGroup([
-                            dbc.Input(id='dynamic-viscosity', type='text', value="{:,}".format(1), className="mb-2"),
+                            dbc.Input(id='dynamic-viscosity', type='number', value=1, className="mb-2"),
                             dbc.InputGroupText("cP")
                         ]),
-                        dbc.Label("Density:", className='mt-2 text-white'),
+                        dbc.Label("Kinematic Viscosity (cSt):", className="text-white"),
                         dbc.InputGroup([
-                            dbc.Input(id='fluid-density', type='text', value="{:,}".format(1000), className="mb-2"),
-                            dbc.InputGroupText("kg/m³")
+                            dbc.Input(id='kinematic-viscosity', type='number', value=1, className="mb-2"),
+                            dbc.InputGroupText("cSt")
                         ]),
-                        dbc.Button('Convert', id='viscosity-convert-btn', color='primary', className='mt-2'),
-                        html.Div(id='viscosity-output', className='mt-4 text-light')
+                        dbc.Label("Density (kg/m³):", className='mt-2 text-white'),
+                        dbc.InputGroup([
+                            dbc.Input(id='fluid-density', type='number', value=1000, className="mb-2"),
+                        ]),
+                        dbc.Alert(id='viscosity-error-message', color='danger', dismissable=True, is_open=False, className='mt-2'),
                     ])
                 ], className="mb-4"),
                 width=4
@@ -498,22 +547,50 @@ def viscosity_conversion_layout():
         ], justify='center')
     ], fluid=True, className="bg-dark")
 
+# Bidirectional conversion between Dynamic and Kinematic Viscosity with error handling
 @app.callback(
-    Output('viscosity-output', 'children'),
-    Input('viscosity-convert-btn', 'n_clicks'),
-    State('dynamic-viscosity', 'value'),
-    State('fluid-density', 'value')
+    [Output('dynamic-viscosity', 'value'),
+     Output('kinematic-viscosity', 'value'),
+     Output('viscosity-error-message', 'children'),
+     Output('viscosity-error-message', 'is_open')],
+    [Input('dynamic-viscosity', 'value'),
+     Input('kinematic-viscosity', 'value'),
+     Input('fluid-density', 'value')]
 )
-def convert_dynamic_to_kinematic(n_clicks, dynamic_viscosity, density):
-    if n_clicks:
-        dynamic_viscosity = float(dynamic_viscosity.replace(',', ''))
-        density = float(density.replace(',', ''))
-
-        kinematic_viscosity = (dynamic_viscosity / density) * 1e6  # cSt
-        kinematic_viscosity_formatted = "{:,}".format(round(kinematic_viscosity, 2))
-
-        return html.P(f"Kinematic Viscosity: {kinematic_viscosity_formatted} cSt")
-    return ''
+def convert_dynamic_to_kinematic(dynamic_viscosity, kinematic_viscosity, density):
+    ctx = callback_context
+    error_message = ''
+    is_open = False
+    if not ctx.triggered:
+        return dynamic_viscosity, kinematic_viscosity, error_message, is_open
+    else:
+        input_id = ctx.triggered[0]['prop_id'].split('.')[0]
+        try:
+            if density is None or density == 0:
+                error_message = 'Density cannot be zero.'
+                is_open = True
+                return dynamic_viscosity, kinematic_viscosity, error_message, is_open
+            if input_id == 'dynamic-viscosity':
+                if dynamic_viscosity is None:
+                    error_message = 'Please enter a valid dynamic viscosity.'
+                    is_open = True
+                    return dynamic_viscosity, kinematic_viscosity, error_message, is_open
+                # Convert dynamic to kinematic viscosity
+                kinematic_viscosity = (dynamic_viscosity / density) * 1e6
+                return dynamic_viscosity, round(kinematic_viscosity, 2), error_message, is_open
+            elif input_id == 'kinematic-viscosity':
+                if kinematic_viscosity is None:
+                    error_message = 'Please enter a valid kinematic viscosity.'
+                    is_open = True
+                    return dynamic_viscosity, kinematic_viscosity, error_message, is_open
+                # Convert kinematic to dynamic viscosity
+                dynamic_viscosity = (kinematic_viscosity * density) / 1e6
+                return round(dynamic_viscosity, 2), kinematic_viscosity, error_message, is_open
+        except Exception as e:
+            error_message = f"An error occurred: {str(e)}"
+            is_open = True
+            return dynamic_viscosity, kinematic_viscosity, error_message, is_open
+    return dynamic_viscosity, kinematic_viscosity, error_message, is_open
 
 # Run the app
 if __name__ == '__main__':
