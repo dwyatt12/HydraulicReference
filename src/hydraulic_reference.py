@@ -1,3 +1,7 @@
+# TODO
+# TODO power factor references for sites
+# TODO motor efficiencies
+
 # Import necessary libraries
 import dash
 from dash import html, dcc, Input, Output, State, callback_context
@@ -8,7 +12,7 @@ from math import log, sqrt
 import plotly.graph_objs as go
 
 # Initialize the app with a dark Bootstrap stylesheet for styling
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.CYBORG], suppress_callback_exceptions=True)
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.SOLAR], suppress_callback_exceptions=True)
 
 # Define the server variable for deployment
 server = app.server
@@ -20,10 +24,10 @@ app.layout = dbc.Container([
     ]),
     dbc.Row([
         dbc.Col([
-            dbc.Button("Pipeline Volume", id="pipeline-volume-btn", color="primary", className="m-2", size='lg'),
-            dbc.Button("Fluid Flow", id="friction-factor-btn", color="success", className="m-2", size='lg'),
-            dbc.Button("Power & Energy", id="energy-needs-btn", color="warning", className="m-2", size='lg'),
-            dbc.Button("Unit Conversions", id="unit-conversions-btn", color="info", className="m-2", size='lg'),
+            dbc.Button("Pipeline Volume", id="pipeline-volume-btn", color="primary", className="m-2", size='md'),
+            dbc.Button("Fluid Flow", id="friction-factor-btn", color="success", className="m-2", size='md'),
+            dbc.Button("Power & Energy", id="energy-needs-btn", color="warning", className="m-2", size='md'),
+            dbc.Button("Unit Conversions", id="unit-conversions-btn", color="info", className="m-2", size='md'),
         ], className="text-center")
     ]),
     html.Hr(className="my-4"),
@@ -56,7 +60,18 @@ def display_page(pv_clicks, ff_clicks, en_clicks, uc_clicks):
         return unit_conversions_layout()
     else:
         return html.Div()
-
+# Offcanvas component with dummy data for the energy needs layout
+def energy_needs_offcanvas():
+   return dbc.Offcanvas(
+       html.Div([
+           html.H5("Energy Needs Info", className="text-white"),
+           html.P("This offcanvas contains details about energy calculations.", className="text-light")
+       ]),
+       id="energy-needs-offcanvas",
+       title="Energy Needs Details",
+       is_open=False,
+       style={"color": "white"}
+   )
 # Pipeline Volume Calculator Layout and Callback
 def pipeline_volume_layout():
     return dbc.Container([
@@ -80,7 +95,7 @@ def pipeline_volume_layout():
                             dbc.Input(id='pv-distance', type='text', value="{:,}".format(10), className="mb-2"),
                             dbc.InputGroupText("miles")
                         ]),
-                        dbc.Button('Calculate', id='pv-calculate-btn', color='primary', className="mt-3"),
+                        dbc.Button('Calculate', id='pv-calculate-btn', color='danger', className="mt-3"),
                     ])
                 ], className="mb-4"),
                 width=6
@@ -170,15 +185,37 @@ def friction_factor_layout():
                             dbc.Input(id='ff-drag-reduction', type='', value="0%", className="mb-2"),
                             dbc.InputGroupText("%")
                         ]),
-                        dbc.Button('Calculate', id='ff-calculate-btn', color='primary', className="mt-3"),
+                        dbc.Button('Calculate', id='ff-calculate-btn', color='danger', className="mt-3"),
+                        dbc.Button('More Info', id='fluid-flow-offcanvas-btn', color='info', className="mt-3")
                     ])
                 ], className="mb-4"),
                 width=6
             )
         ], justify='center'),
         html.Hr(className="my-4"),
-        html.Div(id='ff-output', className="text-light")
+        html.Div(id='ff-output', className="text-light"),
+        fluid_flow_offcanvas()
     ], fluid=True, className="bg-dark")
+
+# Callbacks to handle the offcanvas for Energy Needs and Fluid Flow
+@app.callback(
+   Output("energy-needs-offcanvas", "is_open"),
+   [Input("energy-needs-offcanvas-btn", "n_clicks")],
+   [State("energy-needs-offcanvas", "is_open")]
+)
+def toggle_energy_offcanvas(n_clicks, is_open):
+   if n_clicks:
+       return not is_open
+   return is_open
+@app.callback(
+   Output("fluid-flow-offcanvas", "is_open"),
+   [Input("fluid-flow-offcanvas-btn", "n_clicks")],
+   [State("fluid-flow-offcanvas", "is_open")]
+)
+def toggle_fluid_offcanvas(n_clicks, is_open):
+   if n_clicks:
+       return not is_open
+   return is_open
 
 @app.callback(
     Output('ff-output', 'children'),
@@ -288,6 +325,9 @@ def current_ideal(P, V, phase=3, PF=1):
     else:
         return (P * 1000) / (V * PF)
 
+
+
+
 def energy_needs_layout():
     return dbc.Container([
         dbc.Row(dbc.Col(html.H2("Power & Energy", className="text-center my-4 text-light"))),
@@ -320,15 +360,30 @@ def energy_needs_layout():
                             dbc.Input(id='en-pf', type='number', value=.98, className="mb-2"),
                             dbc.InputGroupText("")
                         ]),
-                        dbc.Button('Calculate', id='en-calculate-btn', color='primary', className="mt-3"),
+                        dbc.Button('Calculate', id='en-calculate-btn', color='danger', className="mt-3"),
+                        dbc.Button('More Info', id='energy-needs-offcanvas-btn', color='info', className="mt-3"),
                     ])
                 ], className="mb-4"),
                 width=6
             )
         ], justify='center'),
         html.Hr(className="my-4"),
-        html.Div(id='en-output', className="text-light")
+        html.Div(id='en-output', className="text-light"),
+        energy_needs_offcanvas()
     ], fluid=True, className="bg-dark")
+
+# Offcanvas component with dummy data for the fluid flow layout
+def fluid_flow_offcanvas():
+   return dbc.Offcanvas(
+       html.Div([
+           html.H5("Fluid Flow Info", className="text-white"),
+           html.P("This offcanvas contains details about fluid flow calculations.", className="text-light")
+       ]),
+       id="fluid-flow-offcanvas",
+       title="Fluid Flow Details",
+       is_open=False,
+       style={"color": "white"}
+   )
 
 @app.callback(
     Output('en-output', 'children'),
