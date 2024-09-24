@@ -1,4 +1,4 @@
-# TODO
+# TODO add wall thicknes
 # TODO power factor references for sites
 # TODO motor efficiencies
 
@@ -25,7 +25,7 @@ navbar = dbc.NavbarSimple(
         dbc.NavItem(dbc.NavLink("Power & Energy", href="/power-energy")),
         dbc.NavItem(dbc.NavLink("Unit Conversions", href="/unit-conversions")),
     ],
-    brand="Tuttle's Toolbox",
+    brand="Quick Reference Toolbox",
     brand_href="/",  # Correct link to the landing page
     color="success",
 )
@@ -99,14 +99,14 @@ def pipeline_volume_layout():
                             dbc.Input(id='pv-distance', type='text', value="{:,}".format(10), className="mb"),
                             dbc.InputGroupText("miles")
                         ]),
-                        dbc.Button('Calculate', id='pv-calculate-btn', color='warning', className="mt-3"),
+                        dbc.Button('Calculate', id='pv-calculate-btn', color='danger', className="mt-3"),
                     ])
                 ], className="mb-4"),
-                width=6  # Inputs on the left (half the row)
+                width=4  # Inputs on the left (half the row)
             ),
             dbc.Col(
                 html.Div(id='pv-output', className="text-light"),
-                width=6  # Output on the right (other half of the row)
+                width=8  # Output on the right (other half of the row)
             )
         ], justify='center'),
         html.Hr(className="my-4"),
@@ -143,6 +143,7 @@ def calculate_pipeline_volume(n_clicks, diameter, wall_thickness, distance):
         # Output
         return html.Div([
             html.H4("Results:", className="text-light"),
+            html.Hr(className="my-3"),  # Add a horizontal line with some vertical margin
             html.P(f"Pipeline Volume: {volume_cuft_formatted} cubic feet"),
             html.P(f"Pipeline Volume: {volume_bbl_formatted} barrels")
         ])
@@ -195,7 +196,7 @@ def friction_factor_layout():
                         ]),
                         dbc.ButtonGroup([
                             dbc.Button('Calculate', id='ff-calculate-btn', color='danger'),
-                            dbc.Button('More Info', id='fluid-flow-offcanvas-btn', color='secondary')
+                            dbc.Button('Pipe Wall Thickness', id='fluid-flow-offcanvas-btn', color='secondary')
                         ], className="mt-3")
                     ])
                 ], className="mb-4"),
@@ -339,12 +340,9 @@ def current_ideal(P, V, phase=3, PF=1):
     else:
         return (P * 1000) / (V * PF)
 
-
-
-
 def energy_needs_layout():
     return dbc.Container([
-        dbc.Row(dbc.Col(html.H2("Power & Energy", className="text-center my-4 text-light"))),
+        dbc.Row(dbc.Col(html.H2("Power & Energy", className="text-left text-light"))),
         dbc.Row([
             dbc.Col(
                 dbc.Card([
@@ -354,56 +352,104 @@ def energy_needs_layout():
                             dbc.Input(id='en-power', type='number', value=750, className="mb"),
                             dbc.InputGroupText("kW")
                         ]),
-                        dbc.Label("Voltage (Volts):", className="text-white"),
+                        dbc.Label("Voltage (Volts):", className="text-white mt-2"),
                         dbc.InputGroup([
                             dbc.Input(id='en-voltage', type='number', value=220, className="mb"),
                             dbc.InputGroupText("V")
                         ]),
-                        dbc.Label("Phase:", className="text-white"),
-                        dcc.Dropdown(
+                        dbc.Label("Phase:", className="text-white mt-4"),
+                        dbc.RadioItems(
                             id='en-phase',
                             options=[
                                 {'label': 'Single-phase', 'value': 1},
                                 {'label': 'Three-phase', 'value': 3},
                             ],
                             value=3,  # Default to three-phase
-                            className="mb-2"
+                            inline=True,  # Display buttons horizontally
+                            className="btn-group",  # Styling
+                            inputClassName="btn-check",
+                            labelClassName="btn btn-outline-warning",
+                            labelCheckedClassName="active",
                         ),
-                        dbc.Label("Power Factor:", className="text-white"),
+                        dbc.Label("Power Factor:", className="text-white mt-2"),
                         dbc.InputGroup([
                             dbc.Input(id='en-pf', type='number', value=.98, className="mb"),
                             dbc.InputGroupText("")
                         ]),
                         dbc.ButtonGroup([
                             dbc.Button('Calculate', id='en-calculate-btn', color='danger'),
-                            dbc.Button('More Info', id='energy-needs-offcanvas-btn', color='info')
+                            dbc.Button('Motor Size Reference', id='energy-needs-offcanvas-btn', color='secondary')
                         ], className="mt-3")
                     ])
                 ], className="mb-4"),
-                width=6  # Inputs on the left
+                width=4  # Inputs on the left
             ),
             dbc.Col(
                 html.Div(id='en-output', className="text-light"),
-                width=6  # Output on the right
+                width=8  # Output on the right
             )
         ], justify='center'),
         html.Hr(className="my-4"),
         energy_needs_offcanvas()
     ], fluid=True, className="bg-dark")
 
-
 # Offcanvas component with dummy data for the fluid flow layout
 def fluid_flow_offcanvas():
-   return dbc.Offcanvas(
-       html.Div([
-           html.H5("Fluid Flow Info", className="text-white"),
-           html.P("This offcanvas contains details about fluid flow calculations.", className="text-light")
-       ]),
-       id="fluid-flow-offcanvas",
-       title="Fluid Flow Details",
-       is_open=False,
-       style={"color": "white"}
-   )
+    # Data for the table
+    table_data = [
+        {"NPS": '1"', "STD": 0.133, "40": 0.133, "XS": 0.179, "XXS": 0.358},
+        {"NPS": '2"', "STD": 0.154, "40": 0.154, "XS": 0.218, "XXS": 0.436},
+        {"NPS": '3"', "STD": 0.216, "40": 0.216, "XS": 0.30, "XXS": 0.600},
+        {"NPS": '4"', "STD": 0.237, "40": 0.237, "XS": 0.337, "XXS": 0.674},
+        {"NPS": '6"', "STD": 0.280, "40": 0.280, "XS": 0.432, "XXS": 0.864},
+        {"NPS": '8"', "STD": 0.322, "40": 0.322, "XS": 0.500, "XXS": 0.875},
+        {"NPS": '10"', "STD": 0.365, "40": 0.365, "XS": 0.500, "XXS": 1.000},
+        {"NPS": '12"', "STD": 0.375, "40": 0.406, "XS": 0.500, "XXS": 1.000},
+        {"NPS": '14"', "STD": 0.375, "40": 0.438, "XS": 0.500, "XXS": None},
+        {"NPS": '16"', "STD": 0.375, "40": 0.500, "XS": 0.500, "XXS": None},
+        {"NPS": '18"', "STD": 0.375, "40": 0.562, "XS": 0.500, "XXS": None},
+        {"NPS": '20"', "STD": 0.375, "40": 0.594, "XS": 0.500, "XXS": None},
+        {"NPS": '22"', "STD": 0.375, "40": None, "XS": 0.500, "XXS": None},
+        {"NPS": '24"', "STD": 0.375, "40": 0.688, "XS": 0.500, "XXS": None},
+        {"NPS": '30"', "STD": 0.375, "40": None, "XS": 0.500, "XXS": None},
+        {"NPS": '32"', "STD": 0.375, "40": 0.688, "XS": None, "XXS": None},
+        {"NPS": '34"', "STD": 0.375, "40": 0.688, "XS": None, "XXS": None},
+        {"NPS": '36"', "STD": 0.375, "40": 0.750, "XS": None, "XXS": None},
+        {"NPS": '42"', "STD": 0.375, "40": 0.750, "XS": None, "XXS": None},
+    ]
+
+    # Format numbers with 3 decimal places, or return empty string if None
+    def format_value(value):
+        return f"{value:.3f}" if value is not None else ""
+
+    # Create table rows with formatted values
+    table_header = [
+        html.Thead(html.Tr([html.Th("NPS"), html.Th("STD"), html.Th("40"), html.Th("XS"), html.Th("XXS")]))
+    ]
+    table_body = [
+        html.Tbody([
+            html.Tr([
+                html.Td(row["NPS"]),
+                html.Td(format_value(row["STD"])),
+                html.Td(format_value(row["40"])),
+                html.Td(format_value(row["XS"])),
+                html.Td(format_value(row["XXS"]))
+            ]) for row in table_data
+        ])
+    ]
+
+    return dbc.Offcanvas(
+        html.Div([
+            html.P("Common pipe wall thicknesses at various diameters.", className="text-light"),
+            html.Hr(),
+            dbc.Table(table_header + table_body, bordered=True, dark=True, hover=True, responsive=True, striped=True)
+        ]),
+        id="fluid-flow-offcanvas",
+        title="Pipe Size Reference",
+        is_open=False,
+        style={"color": "white"},
+        placement="end"
+    )
 
 @app.callback(
     Output('en-output', 'children'),
@@ -424,6 +470,7 @@ def calculate_energy_needs(n_clicks, power, voltage, phase, power_factor):
         # Output the calculated current
         return html.Div([
             html.H4("Results:", className="text-light"),
+            html.Hr(className="my-3"),  # Add a horizontal line with some vertical margin
             html.P(f"Calculated Current: {current_formatted} A"),
             html.P("Does not include power used by the motor’s fan, or starter, or internal losses.")
         ])
