@@ -17,49 +17,53 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.SOLAR], suppress_call
 # Define the server variable for deployment
 server = app.server
 
-# Landing page layout
+# Navbar component with corrected links
+navbar = dbc.NavbarSimple(
+    children=[
+        dbc.NavItem(dbc.NavLink("Pipeline Volume", href="/pipeline-volume")),
+        dbc.NavItem(dbc.NavLink("Fluid Flow", href="/fluid-flow")),
+        dbc.NavItem(dbc.NavLink("Power & Energy", href="/power-energy")),
+        dbc.NavItem(dbc.NavLink("Unit Conversions", href="/unit-conversions")),
+    ],
+    brand="Tuttle's Toolbox",
+    brand_href="/",  # Correct link to the landing page
+    color="success",
+)
+
+# Landing page content
+def landing_page():
+    return dbc.Container([
+        dbc.Row(dbc.Col(html.H2("Welcome to Tuttle's Toolbox", className="text-center my-4 text-light"))),
+        dbc.Row(dbc.Col(html.P("Select a tool from the navigation bar to get started.", className="text-center text-light"))),
+    ], fluid=True, className="bg-dark")
+
+# Landing page layout with URL routing support
 app.layout = dbc.Container([
-    dbc.Row([
-        dbc.Col(html.H1("💧 Liquid Hydraulic Reference Tool", className="text-center my-4 text-light"))
-    ]),
-    dbc.Row([
-        dbc.Col([
-            dbc.Button("Pipeline Volume", id="pipeline-volume-btn", color="primary", className="m-2", size='md'),
-            dbc.Button("Fluid Flow", id="friction-factor-btn", color="success", className="m-2", size='md'),
-            dbc.Button("Power & Energy", id="energy-needs-btn", color="warning", className="m-2", size='md'),
-            dbc.Button("Unit Conversions", id="unit-conversions-btn", color="info", className="m-2", size='md'),
-        ], className="text-center")
-    ]),
+    dcc.Location(id='url', refresh=False),  # Tracks the URL
+    dbc.Row([dbc.Col(navbar)]),
     html.Hr(className="my-4"),
-    html.Div(id='page-content')
+    html.Div(id='page-content')  # Placeholder for dynamic page content
 ], fluid=True, className="bg-dark")
 
-# Callback to update the page content based on button clicks
+# Callback to update the page content based on the current URL
 @app.callback(
     Output('page-content', 'children'),
-    [Input('pipeline-volume-btn', 'n_clicks'),
-     Input('friction-factor-btn', 'n_clicks'),
-     Input('energy-needs-btn', 'n_clicks'),
-     Input('unit-conversions-btn', 'n_clicks')]
+    [Input('url', 'pathname')]
 )
-def display_page(pv_clicks, ff_clicks, en_clicks, uc_clicks):
-    ctx = callback_context
-
-    if not ctx.triggered:
-        return html.Div()
-    else:
-        button_id = ctx.triggered[0]['prop_id'].split('.')[0]
-
-    if button_id == 'pipeline-volume-btn':
+def display_page(pathname):
+    if pathname == '/' or pathname == '':
+        return landing_page()  # Display landing page when at base URL
+    elif pathname == '/pipeline-volume':
         return pipeline_volume_layout()
-    elif button_id == 'friction-factor-btn':
+    elif pathname == '/fluid-flow':
         return friction_factor_layout()
-    elif button_id == 'energy-needs-btn':
+    elif pathname == '/power-energy':
         return energy_needs_layout()
-    elif button_id == 'unit-conversions-btn':
+    elif pathname == '/unit-conversions':
         return unit_conversions_layout()
     else:
-        return html.Div()
+        return html.Div("404 Page Not Found", className="text-center text-light")
+
 # Offcanvas component with dummy data for the energy needs layout
 def energy_needs_offcanvas():
    return dbc.Offcanvas(
@@ -75,35 +79,39 @@ def energy_needs_offcanvas():
 # Pipeline Volume Calculator Layout and Callback
 def pipeline_volume_layout():
     return dbc.Container([
-        dbc.Row(dbc.Col(html.H2("Pipeline Volume Calculator", className="text-center my-4 text-light"))),
+        dbc.Row(dbc.Col(html.H2("Pipeline Volume Calculator", className="text-left text-light"))),
         dbc.Row([
             dbc.Col(
                 dbc.Card([
                     dbc.CardBody([
                         dbc.Label("Diameter:", className="text-white"),
                         dbc.InputGroup([
-                            dbc.Input(id='pv-diameter', type='text', value="{:,}".format(24), className="mb-2"),
+                            dbc.Input(id='pv-diameter', type='text', value="{:,}".format(24), className="mb"),
                             dbc.InputGroupText("inches")
                         ]),
                         dbc.Label("Wall Thickness:", className="text-white"),
                         dbc.InputGroup([
-                            dbc.Input(id='pv-wall-thickness', type='text', value="{:,}".format(0.5), className="mb-2"),
+                            dbc.Input(id='pv-wall-thickness', type='text', value="{:,}".format(0.5), className="mb"),
                             dbc.InputGroupText("inches")
                         ]),
                         dbc.Label("Distance:", className="text-white"),
                         dbc.InputGroup([
-                            dbc.Input(id='pv-distance', type='text', value="{:,}".format(10), className="mb-2"),
+                            dbc.Input(id='pv-distance', type='text', value="{:,}".format(10), className="mb"),
                             dbc.InputGroupText("miles")
                         ]),
-                        dbc.Button('Calculate', id='pv-calculate-btn', color='danger', className="mt-3"),
+                        dbc.Button('Calculate', id='pv-calculate-btn', color='warning', className="mt-3"),
                     ])
                 ], className="mb-4"),
-                width=6
+                width=6  # Inputs on the left (half the row)
+            ),
+            dbc.Col(
+                html.Div(id='pv-output', className="text-light"),
+                width=6  # Output on the right (other half of the row)
             )
         ], justify='center'),
         html.Hr(className="my-4"),
-        html.Div(id='pv-output', className="text-light")
     ], fluid=True, className="bg-dark")
+
 
 @app.callback(
     Output('pv-output', 'children'),
@@ -151,51 +159,57 @@ def determine_flow_regime(reynolds_number):
 # Friction Factor Calculator Layout and Callback
 def friction_factor_layout():
     return dbc.Container([
-        dbc.Row(dbc.Col(html.H2("Friction Factor Calculator", className="text-center my-4 text-light"))),
+        dbc.Row(dbc.Col(html.H2("Friction Factor Calculator", className="text-left text-light"))),
         dbc.Row([
             dbc.Col(
                 dbc.Card([
                     dbc.CardBody([
                         dbc.Label("Diameter:", className="text-white"),
                         dbc.InputGroup([
-                            dbc.Input(id='ff-diameter', type='text', value="{:,}".format(12), className="mb-2"),
+                            dbc.Input(id='ff-diameter', type='text', value="{:,}".format(12), className="mb"),
                             dbc.InputGroupText("inches")
                         ]),
                         dbc.Label("Flow Rate:", className="text-white"),
                         dbc.InputGroup([
-                            dbc.Input(id='ff-flow-rate', type='text', value="{:,}".format(100000), className="mb-2"),
+                            dbc.Input(id='ff-flow-rate', type='text', value="{:,}".format(100000), className="mb"),
                             dbc.InputGroupText("barrels per day")
                         ]),
                         dbc.Label("Roughness:", className="text-white"),
                         dbc.InputGroup([
-                            dbc.Input(id='ff-roughness-ft', type='text', value="{:,.5f}".format(0.00015), className="mb-2"),
+                            dbc.Input(id='ff-roughness-ft', type='text', value="{:,.5f}".format(0.00015), className="mb"),
                             dbc.InputGroupText("feet")
                         ]),
                         dbc.Label("Kinematic Viscosity:", className="text-white"),
                         dbc.InputGroup([
-                            dbc.Input(id='ff-viscosity', type='text', value="{:,}".format(3.6), className="mb-2"),
+                            dbc.Input(id='ff-viscosity', type='text', value="{:,}".format(3.6), className="mb"),
                             dbc.InputGroupText("cSt")
                         ]),
                         dbc.Label("Specific Gravity:", className="text-white"),
                         dbc.InputGroup([
-                            dbc.Input(id='ff-specific-gravity', type='text', value="{:,}".format(0.84), className="mb-2"),
+                            dbc.Input(id='ff-specific-gravity', type='text', value="{:,}".format(0.84), className="mb"),
                         ]),
                         dbc.Label("Drag Reduction:", className="text-white"),
                         dbc.InputGroup([
-                            dbc.Input(id='ff-drag-reduction', type='', value="0%", className="mb-2"),
+                            dbc.Input(id='ff-drag-reduction', type='', value="0%", className="mb"),
                             dbc.InputGroupText("%")
                         ]),
-                        dbc.Button('Calculate', id='ff-calculate-btn', color='danger', className="mt-3"),
-                        dbc.Button('More Info', id='fluid-flow-offcanvas-btn', color='info', className="mt-3")
+                        dbc.ButtonGroup([
+                            dbc.Button('Calculate', id='ff-calculate-btn', color='danger'),
+                            dbc.Button('More Info', id='fluid-flow-offcanvas-btn', color='secondary')
+                        ], className="mt-3")
                     ])
                 ], className="mb-4"),
-                width=6
+                width=4  # Inputs on the left
+            ),
+            dbc.Col(
+                html.Div(id='ff-output', className="text-light"),
+                width=8  # Output on the right
             )
         ], justify='center'),
         html.Hr(className="my-4"),
-        html.Div(id='ff-output', className="text-light"),
         fluid_flow_offcanvas()
     ], fluid=True, className="bg-dark")
+
 
 # Callbacks to handle the offcanvas for Energy Needs and Fluid Flow
 @app.callback(
@@ -337,12 +351,12 @@ def energy_needs_layout():
                     dbc.CardBody([
                         dbc.Label("Power (kW):", className="text-white"),
                         dbc.InputGroup([
-                            dbc.Input(id='en-power', type='number', value=750, className="mb-2"),
+                            dbc.Input(id='en-power', type='number', value=750, className="mb"),
                             dbc.InputGroupText("kW")
                         ]),
                         dbc.Label("Voltage (Volts):", className="text-white"),
                         dbc.InputGroup([
-                            dbc.Input(id='en-voltage', type='number', value=220, className="mb-2"),
+                            dbc.Input(id='en-voltage', type='number', value=220, className="mb"),
                             dbc.InputGroupText("V")
                         ]),
                         dbc.Label("Phase:", className="text-white"),
@@ -357,20 +371,26 @@ def energy_needs_layout():
                         ),
                         dbc.Label("Power Factor:", className="text-white"),
                         dbc.InputGroup([
-                            dbc.Input(id='en-pf', type='number', value=.98, className="mb-2"),
+                            dbc.Input(id='en-pf', type='number', value=.98, className="mb"),
                             dbc.InputGroupText("")
                         ]),
-                        dbc.Button('Calculate', id='en-calculate-btn', color='danger', className="mt-3"),
-                        dbc.Button('More Info', id='energy-needs-offcanvas-btn', color='info', className="mt-3"),
+                        dbc.ButtonGroup([
+                            dbc.Button('Calculate', id='en-calculate-btn', color='danger'),
+                            dbc.Button('More Info', id='energy-needs-offcanvas-btn', color='info')
+                        ], className="mt-3")
                     ])
                 ], className="mb-4"),
-                width=6
+                width=6  # Inputs on the left
+            ),
+            dbc.Col(
+                html.Div(id='en-output', className="text-light"),
+                width=6  # Output on the right
             )
         ], justify='center'),
         html.Hr(className="my-4"),
-        html.Div(id='en-output', className="text-light"),
         energy_needs_offcanvas()
     ], fluid=True, className="bg-dark")
+
 
 # Offcanvas component with dummy data for the fluid flow layout
 def fluid_flow_offcanvas():
@@ -443,12 +463,12 @@ def api_to_sg_layout():
                     dbc.CardBody([
                         dbc.Label("Degrees API:", className="text-white"),
                         dbc.InputGroup([
-                            dbc.Input(id='api-value', type='number', value=30, className="mb-2"),
+                            dbc.Input(id='api-value', type='number', value=30, className="mb"),
                             dbc.InputGroupText("°API")
                         ]),
                         dbc.Label("Specific Gravity:", className="text-white"),
                         dbc.InputGroup([
-                            dbc.Input(id='sg-value', type='number', value=0.876, className="mb-2"),
+                            dbc.Input(id='sg-value', type='number', value=0.876, className="mb"),
                             dbc.InputGroupText("")
                         ]),
                         dbc.Alert(id='api-error-message', color='danger', dismissable=True, is_open=False, className='mt-2'),

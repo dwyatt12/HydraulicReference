@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="981505c8-8350-41f1-97a2-84e33f56df84" name="Changes" comment="Bidirectional unit conversions. Viscosity doesn't work.">
+    <list default="true" id="981505c8-8350-41f1-97a2-84e33f56df84" name="Changes" comment="Cleaned up UI">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/hydraulic_reference.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/hydraulic_reference.py" afterDir="false" />
     </list>
@@ -124,7 +124,15 @@
       <option name="project" value="LOCAL" />
       <updated>1726887994869</updated>
     </task>
-    <option name="localTasksCounter" value="8" />
+    <task id="LOCAL-00008" summary="Cleaned up UI">
+      <option name="closed" value="true" />
+      <created>1727129252545</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1727129252545</updated>
+    </task>
+    <option name="localTasksCounter" value="9" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -132,6 +140,7 @@
     <MESSAGE value="Updating friction factors" />
     <MESSAGE value="Pipeline flow calculations work correctly." />
     <MESSAGE value="Bidirectional unit conversions. Viscosity doesn't work." />
-    <option name="LAST_COMMIT_MESSAGE" value="Bidirectional unit conversions. Viscosity doesn't work." />
+    <MESSAGE value="Cleaned up UI" />
+    <option name="LAST_COMMIT_MESSAGE" value="Cleaned up UI" />
   </component>
 </project>
