@@ -275,8 +275,26 @@ def calculate_friction_factor(n_clicks, diameter_in, flow_rate_bpd, roughness_ft
         friction_factor_sj = 0.25 / (math.log10(roughness_ft / 3.7 + 5.74 / (reynolds_number ** 0.9))) ** 2
         methods['Swamee-Jain'] = friction_factor_sj
 
-        # Alternate Method (Using Swamee-Jain again for demonstration)
-        methods['Alternate Method'] = friction_factor_sj
+
+        # Clamond equation
+        X1 = (roughness_ft / diameter_ft) * reynolds_number * 0.1239681863354175460160858261654858382699  # (log(10)/18.574).evalf(40)
+        X2 = log(reynolds_number) - 0.7793974884556819406441139701653776731705  # log(log(10)/5.02).evalf(40)
+        F = X2 - 0.2
+        X1F = X1 + F
+        X1F1 = 1. + X1F
+
+        E = (log(X1F) - 0.2) / (X1F1)
+        F = F - (X1F1 + 0.5 * E) * E * (X1F) / (X1F1 + E * (1. + (1.0 / 3.0) * E))
+
+        X1F = X1 + F
+        X1F1 = 1. + X1F
+        E = (log(X1F) + F - X2) / (X1F1)
+
+        b = (X1F1 + E * (1. + 1.0 / 3.0 * E))
+        F = b / (b * F - ((X1F1 + 0.5 * E) * E * (X1F)))
+
+        friction_factor_clamond = 1.325474527619599502640416597148504422899 * (F * F)  # ((0.5*log(10))**2).evalf(40)
+        methods['Clamond'] = friction_factor_clamond
 
         # Pressure Loss Calculations (Darcy-Weisbach equation)
         # Pressure loss per mile in psi
